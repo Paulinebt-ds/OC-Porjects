@@ -1,4 +1,4 @@
-
+# Import des librairies nécéssaires
 from sklearn.preprocessing import LabelEncoder
 import json
 
@@ -12,22 +12,30 @@ from joblib import load
 import numpy as np
 import requests
 
+# Importation de la base "application_train"
 df = pd.read_csv("C:/Users/pbliv/Documents/Data Science/P7/application_train.csv")
-if df.shape[1]>=122:
+
+# Suppression des colonnes vides, s'il y en a
+if df.shape[1] >= 122:
     if "" in df.columns:
         df.drop("", axis=1, inplace=True)
+
+# Transformation en nombre entier des colonnes DAYS
 df['DAYS_BIRTH'] = abs(df['DAYS_BIRTH'])
 df['DAYS_EMPLOYED'] = abs(df['DAYS_EMPLOYED'])
 df['DAYS_REGISTRATION'] = abs(df['DAYS_REGISTRATION'])
 df['DAYS_ID_PUBLISH'] = abs(df['DAYS_ID_PUBLISH'])
-df.drop(['TARGET'], axis=1, inplace=True)
-print(df.head())
-print(df.shape)
 
-# Create a label encoder object
+# Suppression de la TARGET
+df.drop(['TARGET'], axis=1, inplace=True)
+
+# print(df.head())
+# print(df.shape)
+
+# Création de l'objet "LabelEncoder()"
 le = LabelEncoder()
 
-# Iterate through the columns
+# Si une colonne a au plus deux labels, on applique le LabelEncoder
 for col in df:
     if df[col].dtype == 'object':
         # If 2 or fewer unique categories
@@ -37,19 +45,23 @@ for col in df:
             # Transform training data
             df[col] = le.transform(df[col])
 
-print(df.shape)
-# one-hot encoding of categorical variables
+#print(df.shape)
+# One-hot encoding (dichotomisation) pour les variables catégorielles
+
 df = pd.get_dummies(df)
-print(df.shape)
+#print(df.shape)
+
+
 df.drop(['CODE_GENDER_XNA', 'NAME_FAMILY_STATUS_Unknown',
        'NAME_INCOME_TYPE_Maternity leave'], axis=1, inplace=True)
-# Replace the anomalous values with nan
+
+# Remplacement des anomalies par des valeurs manquantes
 df['DAYS_EMPLOYED'].replace({365243: np.nan}, inplace=True)
 
 # Dataframe pour les variables polynomiales
 poly_features = df[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3', 'DAYS_BIRTH']]
 
-# Imputation des valeurs manquantes par la moyenne
+# Imputation des valeurs manquantes des fonctions polynomiales par la moyenne
 imputer = load("C:/Users/pbliv/Documents/Data Science/P7/imputer_poly.joblib")
 poly_imputer = imputer.transform(poly_features)
 
