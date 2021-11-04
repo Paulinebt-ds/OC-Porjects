@@ -25,47 +25,52 @@ def predict():
     data_client = pd.DataFrame.from_dict(row)
     cols = data_client.columns
 
-    # imputer = load("C:/Users/pbliv/Documents/Data Science/P7/imputer.joblib")
-    # data_client = imputer.transform(data_client)
-    # data_client = pd.DataFrame(data_client, columns=cols)
-
     print(data_client.head())
     # calcul prédiction défaut et probabilité de défaut
     payload = data_client
     print("Payload, head :", payload.head())
 
-    # Modèle sauvegardé via joblib
-    my_model = load("C:/Users/pbliv/Documents/Data Science/P7/mymodel.joblib")
-
     # Modèle sauvegardé par LGBM
     # Load the Model back from file
     LGBM_model = lgb.Booster(model_file="C:/Users/pbliv/Documents/Data Science/P7/model.bin")
 
+    # Importation du scaler
     scaler = load("C:/Users/pbliv/Documents/Data Science/P7/scaler.joblib")
     scaler.clip = False
     print(scaler)
 
+    # Importation de l'imputer
     imputer = load("C:/Users/pbliv/Documents/Data Science/P7/imputer.joblib")
     print(imputer)
     print(LGBM_model)
 
+    # Imputation des valeurs manquantes
     payload = imputer.transform(payload)
 
+    # Réduction
     payload = scaler.transform(payload)
+
+    # Prédiction
     pred = LGBM_model.predict(payload)
     print(pred)
-    req_data = {"row": 2,
-                "id": data_client.iloc[:, 1],
+
+    # Affichage du résultat
+    ## Sous format json
+    req_data = {"ligne client": 2,
+                "id": data_client.loc[:, "SK_ID_CURR"],
                 "prediction": pred}
-    id_client = data_client.iloc[:, 1]
+
     print('Nouvelle Prédiction : \n', req_data)
+
+    ## Sous format HTML
+    id_client = data_client.iloc[:, 0]
     return '''
                       <h1>Ligne du client choisi: {}</h1>
                       <h1>ID du client : {}</h1>
                       <h1>Prédiction du client : {}</h1>'''.format(2, id_client, pred)
-    #return jsonify(req_data)
+
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
 
