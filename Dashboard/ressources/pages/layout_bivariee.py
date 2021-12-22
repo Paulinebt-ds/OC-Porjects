@@ -160,7 +160,7 @@ app.layout = html.Div([
                                 options=[
                                     {'label': var, 'value': var} for var in features
                                 ],
-                                value=features[0],
+                                value="ORGANIZATION_TYPE",
                             ),
                             html.Div(),
                             html.Hr(),
@@ -336,8 +336,6 @@ def update_graph(xaxis_column_name, yaxis_column_name):
 
 
 def create_time_series(dff, col, color, title):
-    print("create_time_series")
-    print(col)
     fig = px.histogram(dff, x=col, color=color)
 
     fig.update_xaxes(showgrid=False)
@@ -354,10 +352,8 @@ def create_bar_plot(dff, col, color, title):
     occ_by_target = pd.DataFrame(dff.groupby(["TARGET", col])[col].count())
     df = pd.DataFrame({'count': occ_by_target[col]})
     df = df.reset_index()
-    fig = px.bar(df, x="TARGET", y="count", color=col, title=title)
-
+    fig = px.bar(df, x=col, y="count", color="TARGET", title=title)
     return fig
-
 
 def create_box_plot(dff, col, color, title):
 
@@ -379,10 +375,7 @@ def create_box_plot(dff, col, color, title):
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value')])
 def update_x_timeseries(xaxis_column_name, checkbox):
-    print("update_x_timeseries")
-    print(xaxis_column_name)
-    print(checkbox)
-    if checkbox[0]=='False':
+    if checkbox=='False':
         dff = app_train
         title = '<b>{}</b>'.format(xaxis_column_name)
         col = xaxis_column_name
@@ -410,7 +403,7 @@ def update_x_timeseries(xaxis_column_name, checkbox):
     [dash.dependencies.Input('crossfilter-yaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value')])
 def update_y_timeseries(yaxis_column_name, checkbox):
-    if checkbox[0]=='False':
+    if checkbox=='False':
         dff = app_train
         title = '<b>{}</b>'.format(yaxis_column_name)
         col = yaxis_column_name
@@ -439,14 +432,14 @@ def update_y_timeseries(yaxis_column_name, checkbox):
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value')])
 def update_x_target(xaxis_column_name, checkbox):
-    if pd.api.types.is_categorical_dtype(app_train[xaxis_column_name]) and checkbox[0] == 'False':
+    if pd.api.types.is_object_dtype(app_train[xaxis_column_name]) and checkbox == 'False':
         dff = app_train
         title = '<b>{}</b>'.format(xaxis_column_name)
         col = xaxis_column_name
         color = None
         return go.Figure(create_bar_plot(dff, col, color, title))
 
-    elif pd.api.types.is_categorical_dtype(app_train[xaxis_column_name]) and checkbox[0] == 'True':
+    elif pd.api.types.is_object_dtype(app_train[xaxis_column_name]) and checkbox == 'True':
         dff = app_train
         title = '<b>{}</b>'.format(xaxis_column_name)
         col = xaxis_column_name
@@ -462,7 +455,6 @@ def update_x_target(xaxis_column_name, checkbox):
                       )
         return go.Figure(fig)
 
-
     if pd.api.types.is_numeric_dtype(app_train[xaxis_column_name]):
         dff = app_train
         title = '<b>{}</b>'.format(xaxis_column_name)
@@ -475,7 +467,7 @@ def update_x_target(xaxis_column_name, checkbox):
     dash.dependencies.Output('distrib-col2-target', 'figure'),
     [dash.dependencies.Input('crossfilter-yaxis-column', 'value')])
 def update_y_target(yaxis_column_name):
-    if pd.api.types.is_categorical_dtype(app_train[yaxis_column_name]):
+    if pd.api.types.is_object_dtype(app_train[yaxis_column_name]):
         dff = app_train
         title = '<b>{}</b>'.format(yaxis_column_name)
         col = yaxis_column_name
