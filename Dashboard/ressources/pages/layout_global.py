@@ -9,7 +9,7 @@ from dash.dependencies import Input, Output
 
 import plotly.express as px
 import plotly.graph_objects as go
-
+import base64
 import pandas as pd
 import numpy as np
 
@@ -78,6 +78,8 @@ recapdiv = {
     }
 #####################
 # Header with logo
+image_filename = 'C:/Users/pbliv/PycharmProjects/flaskProject/ressources/assets/logo_pret_a_depenser.PNG'
+encoded_image = base64.b64encode(open(image_filename, 'rb').read())
 def get_header():
 
     header = html.Div([
@@ -95,9 +97,11 @@ def get_header():
 
         html.Div([
             html.Img(
-                    src = app.get_asset_url("logo_pret_a_depenser.png"),
+                    src = "C:/Users/pbliv/PycharmProjects/flaskProject/ressources/assets/logo_pret_a_depenser.PNG/png;base64,{}".format(encoded_image),
                     height = '100',
-                    width = '200')
+                    width = '200',
+                    className='img')
+
             ],
             className = 'col-2',
             style = {
@@ -140,9 +144,9 @@ def get_navbar(p = 'sales'):
 
         html.Div([
             dcc.Link(
-                html.H4(children = 'Page 3',
+                html.H4(children = 'Bivariée',
                         style=navbarcurrentpage),
-                href='/apps/page3'
+                href='/apps/bivariate'
                 )
         ],
         className='col-2'),
@@ -179,9 +183,9 @@ def get_navbar(p = 'sales'):
 
         html.Div([
             dcc.Link(
-                html.H4(children = 'Page 3',
+                html.H4(children = 'Bivariée',
                         style=navbarcurrentpage),
-                href='/apps/page3'
+                href='/apps/bivariate'
                 )
         ],
         className='col-2'),
@@ -195,7 +199,7 @@ def get_navbar(p = 'sales'):
             'box-shadow': '2px 5px 5px 1px rgba(255, 101, 131, .5)'}
     )
 
-    navbar_page3 = html.Div([
+    navbar_bivariate = html.Div([
 
         html.Div([], className = 'col-3'),
 
@@ -219,9 +223,9 @@ def get_navbar(p = 'sales'):
 
         html.Div([
             dcc.Link(
-                html.H4(children = 'Page 3',
+                html.H4(children = 'Bivariée',
                         style = navbarcurrentpage),
-                href='/apps/page3'
+                href='/apps/bivariate'
                 )
         ],
         className='col-2'),
@@ -234,12 +238,12 @@ def get_navbar(p = 'sales'):
             'box-shadow': '2px 5px 5px 1px rgba(255, 101, 131, .5)'}
     )
 
-    if p == 'sales':
+    if p == 'global':
         return navbar_global
-    elif p == 'page2':
+    elif p == 'client':
         return navbar_client
     else:
-        return navbar_page3
+        return navbar_bivariate
 #####################
 #####################
 # Empty row
@@ -305,8 +309,23 @@ df = pd.DataFrame({'labels': temp.index,
                   })
 fig_income_type = px.pie(df, values='values', names='labels', title='Source de revenus pour les demandeurs',hole=0.5)
 
+## Effect of age on the repayment
+# Age information into a separate dataframe
+age_data = app_train[['TARGET', 'DAYS_BIRTH']]
+age_data["DAYS_BIRTH"] = abs(age_data["DAYS_BIRTH"])
+age_data['YEARS_BIRTH'] = age_data['DAYS_BIRTH'] / 365
+# Bin the age data
+age_data['YEARS_BINNED'] = pd.cut(age_data['YEARS_BIRTH'], bins=np.linspace(20, 70, num=11))
+# Group by the bin and calculate averages
+age_groups = age_data.groupby('YEARS_BINNED').mean()
 
+age_groups["YEARS_BINNED"] = age_groups.index
+age_groups["YEARS_BINNED"] = age_groups["YEARS_BINNED"].astype(str)
+age_groups["TARGET"] = 100*age_groups["TARGET"]
 
+# Graph the age bins and the average of the target as a bar plot
+fig_years_binned = go.Figure(px.bar(age_groups, x="YEARS_BINNED", y="TARGET", labels={"YEARS_BINNED": "Bins of age","TARGET": "Failure to Repay (%)"},
+                                    title='Failure to Repay by Age Group'))
 
 temp = app_train["NAME_INCOME_TYPE"].value_counts()
 #print(temp.values)
@@ -457,8 +476,20 @@ app.layout = html.Div([
                     style = {'color' : corporate_colors['white']}),
 
             html.Div([ # Internal row - RECAPS
+                html.Div([dcc.Markdown('''
+                             # Implémentez un modèle de scoring
+                             Prêt à dépenser souhaite mettre en oeuvre un outil de "scoring crédit" 
+                             pour calculer la probabilité qu'un client rembourse son crédit, puis classifier la demande en accordée/refusée.
+                             Le dashboard sera mis à disposition pour que les chargés de relation client puissent à la fois expliquer 
+                             les décisions d'octroi de crédit, mais également permettre à leurs clients de disposer de leurs informations personnelles et de les explorer facilement
 
+                             Les données sont disponibles à cette [adresse](https://www.kaggle.com/c/home-credit-default-risk/data)
+                             ''')
             ],
+                className='col-4',
+                style = {'width': '100%', 'display': 'flex', 'align-items': 'center', 'justify-content': 'center', 'color': 'white'})
+
+                ],
                 className='row',
                 style=recapdiv
             ),  # Internal row - RECAPS
@@ -487,6 +518,10 @@ app.layout = html.Div([
                 html.Div([
                     dcc.Graph(figure=fig_occupation_type_target)]
                     , className='col-6'),  # Empty column
+                #Distribution des tranches d'âge selon la target
+                html.Div([
+                    dcc.Graph(figure=fig_years_binned)]
+                    , className='col-6')  # Empty column
             ],
             className = 'row'), # Internal row
         ],
@@ -515,37 +550,3 @@ app.layout = html.Div([
 
 if __name__ == "__main__":
     app.run_server(debug=True, use_reloader=False)
-
-if rad == '🔎 Further explore data':
-    with eda:
-        st.header("**Overview of exploratory data analysis.** \n ----")
-        st.subheader("Plotting distributions of target and some features.")
-
-        col1, col2, col3 = st.columns(3)  # 3 cols with histogram = home-made func
-        col1.plotly_chart(histogram(df_train, x='TARGET'), use_container_width=True)
-        col2.plotly_chart(histogram(df_train, x='CODE_GENDER'), use_container_width=True)
-        col3.plotly_chart(histogram(df_train, x='EXT_SOURCE_1'), use_container_width=True)
-
-        st.subheader("Let's plot some extra numerical features of your choice.")
-        # letting user choose num & cat feats from dropdown
-        col1, col2, col3 = st.columns(3)
-        num_col = df_train.select_dtypes(include=np.number).columns.sort_values()
-        input1 = col1.selectbox('1st plot', num_col)
-        input2 = col2.selectbox('2nd plot', num_col[1:])
-        input3 = col3.selectbox('3rd plot', num_col[2:])
-
-        st.subheader("Now, you may pick some categorical features to plot.")
-        col4, col5, col6 = st.columns(3)
-        cat_col = df_train.select_dtypes(exclude=np.number).columns.sort_values()
-        input4 = col4.selectbox('1st plot', cat_col[1:])
-        input5 = col5.selectbox('2nd plot', cat_col[2:])
-        input6 = col6.selectbox('3rd plot', cat_col[3:])
-
-        button = st.button('Plot it! ')
-        if button:
-            col1.plotly_chart(histogram(df_train, x=input1, legend=False), use_container_width=True)
-            col2.plotly_chart(histogram(df_train, x=input2, legend=False), use_container_width=True)
-            col3.plotly_chart(histogram(df_train, x=input3, legend=False), use_container_width=True)
-            col4.plotly_chart(histogram(df_train, x=input4, legend=False), use_container_width=True)
-            col5.plotly_chart(histogram(df_train, x=input5, legend=False), use_container_width=True)
-            col6.plotly_chart(histogram(df_train, x=input6, legend=False), use_container_width=True)
