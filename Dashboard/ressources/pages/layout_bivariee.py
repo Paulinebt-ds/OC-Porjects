@@ -344,15 +344,56 @@ def create_time_series(dff, col, color, title):
                        xref='paper', yref='paper', showarrow=False, align='left',
                        text=title)
 
-    #fig.update_layout(height=225, margin={'l': 20, 'b': 30, 'r': 10, 't': 10})
-
     return fig
 
 def create_bar_plot(dff, col, color, title):
-    occ_by_target = pd.DataFrame(dff.groupby(["TARGET", col])[col].count())
-    df = pd.DataFrame({'count': occ_by_target[col]})
-    df = df.reset_index()
-    fig = px.bar(df, x=col, y="count", color="TARGET", title=title)
+    temp = dff[col].value_counts()
+    temp_y0 = []
+    temp_y1 = []
+    count_occ = []
+    for val in temp.index:
+        temp_y1.append(np.sum(dff["TARGET"][dff[col] == val] == 1))
+        temp_y0.append(np.sum(app_train["TARGET"][dff[col] == val] == 0))
+        count_occ.append(np.sum([dff[col] == val]))
+    trace1 = go.Bar(
+        x=(temp_y1 / pd.Series(count_occ)) * 100,
+        y=temp.index,
+        orientation='h',
+        name='NO'
+    )
+    trace2 = go.Bar(
+        x=(temp_y0 / pd.Series(count_occ)) * 100,
+        y=temp.index,
+        orientation='h',
+        name='YES'
+    )
+
+    data = [trace1, trace2]
+    layout = go.Layout(
+        title=title,
+        # Barmode=stack permet d'avoir des graphiques empilés
+        barmode='stack',
+        xaxis=dict(
+            title='Pourcentage',
+            tickfont=dict(
+                size=14,
+                color='rgb(107, 107, 107)'
+            )
+        ),
+        yaxis=dict(
+            title=col,
+            titlefont=dict(
+                size=16,
+                color='rgb(107, 107, 107)'
+            ),
+            tickfont=dict(
+                size=14,
+                color='rgb(107, 107, 107)'
+            )
+        )
+    )
+
+    fig = go.Figure(data=data, layout=layout)
     return fig
 
 def create_box_plot(dff, col, color, title):
@@ -437,7 +478,7 @@ def update_x_target(xaxis_column_name, checkbox):
         title = '<b>{}</b>'.format(xaxis_column_name)
         col = xaxis_column_name
         color = None
-        return go.Figure(create_bar_plot(dff, col, color, title))
+        return create_bar_plot(dff, col, color, title)
 
     elif pd.api.types.is_object_dtype(app_train[xaxis_column_name]) and checkbox == 'True':
         dff = app_train
@@ -472,7 +513,7 @@ def update_y_target(yaxis_column_name):
         title = '<b>{}</b>'.format(yaxis_column_name)
         col = yaxis_column_name
         color = "TARGET"
-        return go.Figure(create_bar_plot(dff, col, color, title))
+        return create_bar_plot(dff, col, color, title)
 
     if pd.api.types.is_numeric_dtype(app_train[yaxis_column_name]):
         dff = app_train
