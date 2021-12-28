@@ -6,7 +6,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 from dash import dash_table as dt
 from dash.dependencies import Input, Output
-
+from ressources.components.pages_plugin import *
 import plotly.express as px
 import plotly.graph_objects as go
 import base64
@@ -346,7 +346,7 @@ trace2 = go.Bar(
 )
 
 data = [trace1, trace2]
-layout = go.Layout(
+layout_income = go.Layout(
     title = "Income sources of Applicant's in terms of loan is repayed or not  in %",
     #barmode='stack',
     width = 1000,
@@ -370,7 +370,7 @@ layout = go.Layout(
 )
 )
 
-fig_income_type_target = go.Figure(data=data, layout=layout)
+fig_income_type_target = go.Figure(data=data, layout=layout_income)
 
 
 temp = app_train["OCCUPATION_TYPE"].value_counts()
@@ -396,7 +396,7 @@ trace2 = go.Bar(
 )
 
 data = [trace1, trace2]
-layout = go.Layout(
+layout_occupation = go.Layout(
     title = "Occupation of Applicant's in terms of loan is repayed or not in %",
     #Barmode=stack permet d'avoir des graphiques empilés
     barmode='stack',
@@ -421,14 +421,14 @@ layout = go.Layout(
 )
 )
 
-fig_occupation_type_target = go.Figure(data=data, layout=layout)
+fig_occupation_type_target = go.Figure(data=data, layout=layout_occupation)
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
-
-## Layout de la page client
-app.layout = html.Div([
+dash.register_page(__name__, path="/apps/global")
+## Layout de la page globale
+layout = html.Div([
 
     #####################
     #Row 1 : Header

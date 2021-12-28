@@ -16,7 +16,6 @@ from io import BytesIO
 
 from plotly.graph_objs import Figure
 
-from header import *
 import dash_alternative_viz as dav
 
 from bokeh.embed import json_item
@@ -33,6 +32,7 @@ from joblib import dump, load
 import self
 
 # Import des fonctions de preprocess
+from ressources.components.pages_plugin import *
 from ressources.components.preprocess import *
 from ressources.components.functions import *
 # from components.functions import *
@@ -114,6 +114,7 @@ recapdiv = {
 }
 ## APP FLASK
 # Start the app
+dash.register_page(__name__, path="/apps/client")
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 cache = Cache(app.server, config={
@@ -140,6 +141,7 @@ def get_data():
 
 data_domain = get_data()
 desc_col = pd.read_excel(desc_col)
+columns = [{"name": i, "id": i} for i in desc_col.columns]
 # def transform_data():
 # df = normalize_data(data_domain, path_scaler, path_imputer)
 # return df
@@ -183,8 +185,8 @@ scaled_test_data = scaler.transform(X_val)
 predict_method = model.predict_proba
 
 ## Layout de la page client
-app.layout = html.Div([
-    dcc.Store(id='memory-output'),
+layout = html.Div([
+    #dcc.Store(id='memory-output'),
     #####################
     # Row 1 : Header
     get_header(),
@@ -224,7 +226,7 @@ app.layout = html.Div([
                                     {'label': id_value, 'value': id_value} for id_value in
                                     data_domain['SK_ID_CURR'].values
                                 ],
-                                value=data_domain['SK_ID_CURR'].values,
+                                value=100002,
                             ),
                             html.Div(),
                             html.Hr(),
@@ -280,8 +282,6 @@ app.layout = html.Div([
                     style={'color': corporate_colors['white']}),
 
             html.Div([  # Internal row - RECAPS
-
-                # Intégration des cartes
                 html.Div([dbc.Card(
                     [
                         html.H2(id="update_id", className="card-title"),
@@ -295,7 +295,6 @@ app.layout = html.Div([
                 html.Div([
                     dcc.Graph(id="update_gauge-fig")],
                     className='col-4'),
-                ## Carte affichant si l'individu est accepté
                 html.Div([
                     dbc.Card([
                         html.H2(id="update_card", className="card-title"),
@@ -319,11 +318,22 @@ app.layout = html.Div([
                     className='col-6'),
                 html.Div([
                     dash_table.DataTable(
-                    id='table',
+                    id='table-desc',
                     columns=[{"name": i, "id": i} for i in desc_col.columns],
                     data=desc_col.to_dict('records'),
-                    )],
-                    className='col-6'),
+                    style_header={
+                        'backgroundColor': 'blue',
+                        'fontWeight': 'bold',
+                        'color': 'white',
+                        'border': '0px'
+                    },
+                    style_cell={'padding': '5px', 'border': '0px', 'textAlign': 'center'},
+                    style_as_list_view=True,
+                    page_action='native',
+                    fixed_rows={'headers': True},
+                    style_table={'height': '400px', 'overflowY': 'auto'},
+                    sort_action='native'
+                    )]),
                 html.Br(),
                 dcc.Loading(
                     id='explainer-obj',
@@ -373,14 +383,8 @@ def number_render(caseval):
     Input("case-dropdown", "value"),
 )
 def update_input(submit_n_clicks, reset_n_clicks, case):
-    ctx = dash.callback_context
-    if type(case) is list or "reset" in ctx.triggered[0]["prop_id"]:
-        # Return empty iFrame
-        id_client = data_domain[0, "SK_ID_CURR"]
-    else:
-        id_client = case
+    id_client = case
     return id_client
-
 
 @app.callback(
     Output("update_score", "children"),
@@ -414,8 +418,9 @@ def update_score(submit_n_clicks, reset_n_clicks, case):
 )
 def update_card(submit_n_clicks, reset_n_clicks, score):
     ctx = dash.callback_context
-    if "predict" in ctx.triggered[0]["prop_id"]:
-        if update_score <= 0.5:
+    print(type(score))
+    if type(score) is float:
+        if score <= 0.5:
             accepted = "accepté"
         else:
             accepted = "refusé"
@@ -430,8 +435,6 @@ def clear_form(n_clicks):
     """Empty input textarea"""
     return ""
 
-
-# Mise à jour de la jauge
 @app.callback(
     Output("update_gauge-fig", "figure"),
     Input('submit-button', 'n_clicks'),
@@ -440,20 +443,31 @@ def clear_form(n_clicks):
 )
 def update_gauge(submit_n_clicks, reset_n_clicks, score):
     ctx = dash.callback_context
-    if "predict" in ctx.triggered[0]["prop_id"]:
+    if type(score) is float:
         accepted_percent = (1 - score) * 100
+        print(accepted_percent)
         gauge_figure = go.Figure(go.Indicator(
             domain={'x': [1, 0], 'y': [0, 1]},
             value=accepted_percent,
             mode="gauge+number+delta",
             title="Pourcentage d'acceptation du client",
             delta={'reference': 50},
-            # align = "center",
             gauge={'axis': {'range': [0, 100]},
                    'steps': [{'range': [0, 50], 'color': "lightgray"},
                              {'range': [50, 100], 'color': "gray"}],
                    'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': accepted_percent}}))
-        return gauge_figure
+    else:
+        gauge_figure = go.Figure(go.Indicator(
+            domain={'x': [1, 0], 'y': [0, 1]},
+            value=50,
+            mode="gauge+number+delta",
+            title="Pourcentage d'acceptation du client",
+            delta={'reference': 50},
+            gauge={'axis': {'range': [0, 100]},
+                   'steps': [{'range': [0, 50], 'color': "lightgray"},
+                             {'range': [50, 100], 'color': "gray"}],
+                   'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 50}}))
+    return gauge_figure
 
 
 @app.callback(Output("seaborn", "contents"), [Input('num-samples-input', 'value')])
@@ -482,6 +496,20 @@ def seaborn_fig(n_samples):
         obj = b_io.getvalue().decode("utf-8")
         return obj
 
+@app.callback(Output("table-desc", "data"),
+              [Input('num-samples-input', 'value')])
+def update_table(n_samples):
+    if type(n_samples) is not int:
+        features = results.sort_values(by="features_importance", ascending=False).head(5)['var'].values
+        print(features)
+        print(desc_col[desc_col['Row'].isin(features)])
+        filtered_df = desc_col[desc_col["Row"].isin(features)]
+
+    else:
+        features = results.sort_values(by="features_importance", ascending=False).head(n_samples)['var'].values
+        filtered_df = desc_col[desc_col['Row'].isin(features)]
+
+    return filtered_df.to_dict('records')
 
 @app.callback(Output('explainer-obj', 'children'),
               Input('submit-button', 'n_clicks'),

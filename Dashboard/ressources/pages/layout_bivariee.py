@@ -29,7 +29,7 @@ from bokeh.io import output_file, show
 # Import des fonctions de preprocess
 from ressources.components.preprocess import *
 from ressources.components.functions import *
-from header import *
+from ressources.components.pages_plugin import *
 # from components.functions import *
 import pandas as pd
 import numpy as np
@@ -50,7 +50,7 @@ import requests
 ####################################################################################################
 # 000 - FORMATTING INFO
 ####################################################################################################
-
+dash.register_page(__name__, path="/apps/bivariate")
 ####################### Corporate css formatting
 corporate_colors = {
     'dark-blue-grey': 'rgb(62, 64, 76)',
@@ -121,7 +121,7 @@ app_train = pd.read_csv(path)
 
 features = app_train.drop(["SK_ID_CURR", "TARGET"], axis=1).columns
 ## Layout de la page client
-app.layout = html.Div([
+layout = html.Div([
 
     #####################
     # Row 1 : Header
@@ -287,19 +287,19 @@ app.layout = html.Div([
 
 
 @app.callback(
-    Output("col1-out", "children"),
-    Input('crossfilter-xaxis-column', "value"),
-)
-def col1_render(col1_val):
-    return "1ère colonne choisie: {}".format(col1_val)
-
-
-@app.callback(
     Output("col2-out", "children"),
     Input('crossfilter-yaxis-column', "value"),
 )
 def col2_render(col2_val):
     return "2ème colonne choisie: {}".format(col2_val)
+
+
+@app.callback(
+    Output("col1-out", "children"),
+    Input('crossfilter-xaxis-column', "value"),
+)
+def col1_render(col1_val):
+    return "1ère colonne choisie: {}".format(col1_val)
 
 @app.callback(
     dash.dependencies.Output('crossfilter-indicator-scatter', 'contents'),
@@ -414,9 +414,10 @@ def create_box_plot(dff, col, color, title):
 @app.callback(
     dash.dependencies.Output('x-time-series', 'figure'),
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
-     dash.dependencies.Input('checkbox-value', 'value')])
-def update_x_timeseries(xaxis_column_name, checkbox):
-    if checkbox=='False':
+     dash.dependencies.Input('checkbox-value', 'value'),
+     dash.dependencies.State('memory-output', 'data')])
+def update_x_timeseries(xaxis_column_name, checkbox, data):
+    if checkbox =='False':
         dff = app_train
         title = '<b>{}</b>'.format(xaxis_column_name)
         col = xaxis_column_name
@@ -429,8 +430,9 @@ def update_x_timeseries(xaxis_column_name, checkbox):
         col = xaxis_column_name
         color = None
         fig = create_time_series(dff, col, color, title)
+        data = data[col]
         fig.add_shape(type="line",
-                      x0=2, y0=2, x1=5, y1=2,
+                      x0=data.values, y0=min(dff[col]), x1=data.values, y1=max(dff[col]),
                       line=dict(
                           color="LightSeaGreen",
                           width=4,
