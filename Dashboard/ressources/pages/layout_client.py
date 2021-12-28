@@ -356,7 +356,7 @@ layout = html.Div([
 ])
 
 
-@app.callback(
+@callback(
     Output("memory-output", "data"),
     Input("case-dropdown", "value"),
 )
@@ -368,7 +368,7 @@ def filter_id(caseval):
     return data.to_dict('records')
 
 
-@app.callback(
+@callback(
     Output("number-out", "children"),
     Input("case-dropdown", "value"),
 )
@@ -376,7 +376,7 @@ def number_render(caseval):
     return "ID choisi: {}".format(caseval)
 
 
-@app.callback(
+@callback(
     Output("update_id", "children"),
     Input('submit-button', 'n_clicks'),
     Input('reset-button', 'n_clicks'),
@@ -386,7 +386,7 @@ def update_input(submit_n_clicks, reset_n_clicks, case):
     id_client = case
     return id_client
 
-@app.callback(
+@callback(
     Output("update_score", "children"),
     Input('submit-button', 'n_clicks'),
     Input('reset-button', 'n_clicks'),
@@ -410,7 +410,7 @@ def update_score(submit_n_clicks, reset_n_clicks, case):
         return score
 
 
-@app.callback(
+@callback(
     Output("update_card", "children"),
     Input('submit-button', 'n_clicks'),
     Input('reset-button', 'n_clicks'),
@@ -429,13 +429,13 @@ def update_card(submit_n_clicks, reset_n_clicks, score):
         return msg_card
 
 
-@app.callback(Output('case-dropdown', 'value'),
+@callback(Output('case-dropdown', 'value'),
               Input('reset-button', 'n_clicks'))
 def clear_form(n_clicks):
     """Empty input textarea"""
     return ""
 
-@app.callback(
+@callback(
     Output("update_gauge-fig", "figure"),
     Input('submit-button', 'n_clicks'),
     Input('reset-button', 'n_clicks'),
@@ -470,7 +470,7 @@ def update_gauge(submit_n_clicks, reset_n_clicks, score):
     return gauge_figure
 
 
-@app.callback(Output("seaborn", "contents"), [Input('num-samples-input', 'value')])
+@callback(Output("seaborn", "contents"), [Input('num-samples-input', 'value')])
 def seaborn_fig(n_samples):
     empty_obj = html.Iframe(
         srcDoc='''<div>Entrer le nombre de variables pour l'importance des variables (global).</div>''',
@@ -496,7 +496,7 @@ def seaborn_fig(n_samples):
         obj = b_io.getvalue().decode("utf-8")
         return obj
 
-@app.callback(Output("table-desc", "data"),
+@callback(Output("table-desc", "data"),
               [Input('num-samples-input', 'value')])
 def update_table(n_samples):
     if type(n_samples) is not int:
@@ -511,7 +511,7 @@ def update_table(n_samples):
 
     return filtered_df.to_dict('records')
 
-@app.callback(Output('explainer-obj', 'children'),
+@callback(Output('explainer-obj', 'children'),
               Input('submit-button', 'n_clicks'),
               Input('reset-button', 'n_clicks'),
               State('case-dropdown', 'value'),

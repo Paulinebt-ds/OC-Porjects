@@ -286,7 +286,7 @@ layout = html.Div([
 ])
 
 
-@app.callback(
+@callback(
     Output("col2-out", "children"),
     Input('crossfilter-yaxis-column', "value"),
 )
@@ -294,14 +294,14 @@ def col2_render(col2_val):
     return "2ème colonne choisie: {}".format(col2_val)
 
 
-@app.callback(
+@callback(
     Output("col1-out", "children"),
     Input('crossfilter-xaxis-column', "value"),
 )
 def col1_render(col1_val):
     return "1ère colonne choisie: {}".format(col1_val)
 
-@app.callback(
+@callback(
     dash.dependencies.Output('crossfilter-indicator-scatter', 'contents'),
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
      dash.dependencies.Input('crossfilter-yaxis-column', 'value')])
@@ -411,7 +411,7 @@ def create_box_plot(dff, col, color, title):
     return fig
 
 
-@app.callback(
+@callback(
     dash.dependencies.Output('x-time-series', 'figure'),
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value'),
@@ -441,7 +441,7 @@ def update_x_timeseries(xaxis_column_name, checkbox, data):
                       )
         return go.Figure(fig)
 
-@app.callback(
+@callback(
     dash.dependencies.Output('y-time-series', 'figure'),
     [dash.dependencies.Input('crossfilter-yaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value')])
@@ -470,7 +470,7 @@ def update_y_timeseries(yaxis_column_name, checkbox):
         return go.Figure(fig)
 
 
-@app.callback(
+@callback(
     dash.dependencies.Output('distrib-col1-target', 'figure'),
     [dash.dependencies.Input('crossfilter-xaxis-column', 'value'),
      dash.dependencies.Input('checkbox-value', 'value')])
@@ -506,7 +506,7 @@ def update_x_target(xaxis_column_name, checkbox):
         return go.Figure(create_box_plot(dff, col, color, title))
 
 
-@app.callback(
+@callback(
     dash.dependencies.Output('distrib-col2-target', 'figure'),
     [dash.dependencies.Input('crossfilter-yaxis-column', 'value')])
 def update_y_target(yaxis_column_name):
