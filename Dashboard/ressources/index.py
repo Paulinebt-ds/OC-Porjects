@@ -6,35 +6,36 @@ from dash.dependencies import Input, Output
 import dash_labs as dl  # pip install dash-labs
 from ressources.app import app, server
 from components.pages_plugin import *
-from pages.layout_global import layout as layout_global
-from pages.layout_client import layout as layout_client
+
 from pages.layout_client import data_domain
-from pages.layout_bivariee import layout as layout_bivariee
+
 
 df = data_domain[data_domain["SK_ID_CURR"] == int(100002)]
 df = df.to_dict('records')
-
 # layout rendu par l'application
-app.layout = html.Div([
-    dcc.Store(id='memory-output', data=df),
-    dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
-])
+navbar = dbc.NavbarSimple(
+    dbc.DropdownMenu(
+        [
+            dbc.DropdownMenuItem(page["name"], href=page["path"])
+            for page in dash.page_registry.values()
+            if page["module"] != "pages.not_found_404"
+        ],
+        nav=True,
+        label="More Pages",
+    ),
+    brand="Multi Page App Plugin Demo",
+    color="primary",
+    dark=True,
+    className="mb-2",
+)
 
-
-# callback pour mettre à jour les pages
-@app.callback(Output('page-content', 'children'),
-              [Input('url', 'pathname')])
-def display_page(pathname):
-    if pathname == '/apps/global':
-        return layout_global
-    elif pathname == '/apps/client':
-        return layout_client
-    elif pathname == '/apps/bivariate':
-        return layout_bivariee
-    else:
-        return layout_global  # This is the "home page"
+app.layout = dbc.Container(
+    [navbar,
+     dcc.Store(id="memory-output", data=df),
+     dl.plugins.page_container],
+    fluid=True,
+)
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)S
