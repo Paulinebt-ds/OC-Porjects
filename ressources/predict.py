@@ -10,6 +10,7 @@ import lightgbm as lgb
 from joblib import load
 import pickle
 import numpy as np
+
 app = Flask(__name__)
 
 @app.route('/predict', methods = ['POST'])
