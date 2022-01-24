@@ -2,14 +2,13 @@
 from flask import Flask, request
 import dash
 from dash import dcc
+from dash import callback
 from dash import html
 import dash_bootstrap_components as dbc
 from dash import dash_table as dt
 from dash.dependencies import Input, Output
-from ressources.components.pages_plugin import *
 import plotly.express as px
 import plotly.graph_objects as go
-import base64
 import pandas as pd
 import numpy as np
 
@@ -76,174 +75,7 @@ recapdiv = {
     'padding-bottom' : '5px',
     'background-color' : 'rgb(251, 251, 252, 0.1)'
     }
-#####################
-# Header with logo
-image_filename = 'C:/Users/pbliv/PycharmProjects/flaskProject/ressources/assets/logo_pret_a_depenser.PNG'
-encoded_image = base64.b64encode(open(image_filename, 'rb').read())
-def get_header():
 
-    header = html.Div([
-
-        html.Div([], className = 'col-2'), #Same as img width, allowing to have the title centrally aligned
-
-        html.Div([
-            html.H1(children='Dashboard',
-                    style = {'textAlign' : 'center',
-                            'color': 'white'}
-            )],
-            className='col-8',
-            style = {'padding-top' : '1%'}
-        ),
-
-        html.Div([
-            html.Img(
-                    src = "C:/Users/pbliv/PycharmProjects/flaskProject/ressources/assets/logo_pret_a_depenser.PNG/png;base64,{}".format(encoded_image),
-                    height = '100',
-                    width = '200',
-                    className='img')
-
-            ],
-            className = 'col-2',
-            style = {
-                    'align-items': 'center',
-                    'padding-top' : '1%',
-                    'height' : '100'})
-
-        ],
-        className = 'row',
-        style = {'height' : '4%',
-                'background-color' : corporate_colors['superdark-green']}
-        )
-
-    return header
-#####################
-# Nav bar
-def get_navbar(p = 'sales'):
-
-    navbar_global = html.Div([
-
-        html.Div([], className = 'col-3'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Global',
-                        style = navbarcurrentpage),
-                href='/apps/global'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Client',
-                        style = navbarcurrentpage),
-                href='/apps/Client'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Bivariée',
-                        style=navbarcurrentpage),
-                href='/apps/bivariate'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([], className = 'col-3')
-
-    ],
-    className = 'row',
-    style = {'background-color' : corporate_colors['dark-green'],
-            'box-shadow': '2px 5px 5px 1px rgba(255, 101, 131, .5)'}
-    )
-
-    navbar_client = html.Div([
-
-        html.Div([], className = 'col-3'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Global',
-                        style=navbarcurrentpage),
-                href='/apps/global'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Client',
-                        style = navbarcurrentpage),
-                href='/apps/Client'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Bivariée',
-                        style=navbarcurrentpage),
-                href='/apps/bivariate'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([], className = 'col-3',
-                 style=navbarcurrentpage)
-
-    ],
-    className = 'row',
-    style = {'background-color' : corporate_colors['dark-green'],
-            'box-shadow': '2px 5px 5px 1px rgba(255, 101, 131, .5)'}
-    )
-
-    navbar_bivariate = html.Div([
-
-        html.Div([], className = 'col-3'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Global',
-                        style=navbarcurrentpage),
-                href='/apps/global'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Client',
-                        style=navbarcurrentpage),
-                href='/apps/client'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([
-            dcc.Link(
-                html.H4(children = 'Bivariée',
-                        style = navbarcurrentpage),
-                href='/apps/bivariate'
-                )
-        ],
-        className='col-2'),
-
-        html.Div([], className = 'col-3')
-
-    ],
-    className = 'row',
-    style = {'background-color' : corporate_colors['dark-green'],
-            'box-shadow': '2px 5px 5px 1px rgba(255, 101, 131, .5)'}
-    )
-
-    if p == 'global':
-        return navbar_global
-    elif p == 'client':
-        return navbar_client
-    else:
-        return navbar_bivariate
 #####################
 #####################
 # Empty row
@@ -260,14 +92,14 @@ def get_emptyrow(h='45px'):
     style = {'height' : h})
 
     return emptyrow
-path = "C:/Users/pbliv/Documents/Data Science/P7/application_train.csv"
+path = "data/application_train.csv"
 app_train = pd.read_csv(path)
 
 temp = app_train["TARGET"].value_counts()
-df = pd.DataFrame({'labels': temp.index,
+df = pd.DataFrame({'labels': ["oui", "non"],
                    'values': temp.values
                   })
-fig_target = px.pie(df, values='values', names='labels', title='Loan Repayed or not')
+fig_target = px.pie(df, values='values', names='labels', title='Prêt remboursé ou non')
 
 
 temp = app_train["NAME_CONTRACT_TYPE"].value_counts()
@@ -285,7 +117,7 @@ fig_set = {
 
     ],
     "layout": {
-        "title": "Types of loan",
+        "title": "Types de prêts",
         "annotations": [
             {
                 "font": {
@@ -324,8 +156,8 @@ age_groups["YEARS_BINNED"] = age_groups["YEARS_BINNED"].astype(str)
 age_groups["TARGET"] = 100*age_groups["TARGET"]
 
 # Graph the age bins and the average of the target as a bar plot
-fig_years_binned = go.Figure(px.bar(age_groups, x="YEARS_BINNED", y="TARGET", labels={"YEARS_BINNED": "Bins of age","TARGET": "Failure to Repay (%)"},
-                                    title='Failure to Repay by Age Group'))
+fig_years_binned = go.Figure(px.bar(age_groups, x="YEARS_BINNED", y="TARGET", labels={"YEARS_BINNED": "Tranches d'âge","TARGET": "Défaut de remboursement (%)"},
+                                    title="Défaut de remboursement par tranches d'âge"))
 
 temp = app_train["NAME_INCOME_TYPE"].value_counts()
 #print(temp.values)
@@ -336,29 +168,29 @@ for val in temp.index:
     temp_y0.append(np.sum(app_train["TARGET"][app_train["NAME_INCOME_TYPE"]==val] == 0))
 trace1 = go.Bar(
     x = temp.index,
-    y = (temp_y1 / temp.sum()) * 100,
-    name='NO'
+    y = (temp_y1/temp.sum()) * 100,
+    name='NON'
 )
 trace2 = go.Bar(
     x = temp.index,
-    y = (temp_y0 / temp.sum()) * 100,
-    name='YES'
+    y = (temp_y0/temp.sum()) * 100,
+    name='OUI'
 )
 
 data = [trace1, trace2]
 layout_income = go.Layout(
-    title = "Income sources of Applicant's in terms of loan is repayed or not  in %",
+    title = "Sources de revenus des demandeurs selon le risque de défaut",
     #barmode='stack',
     width = 1000,
     xaxis=dict(
-        title='Income source',
+        title='Source de revenus',
         tickfont=dict(
             size=14,
             color='rgb(107, 107, 107)'
         )
     ),
     yaxis=dict(
-        title='Count in %',
+        title='Fréquence (%)',
         titlefont=dict(
             size=16,
             color='rgb(107, 107, 107)'
@@ -386,23 +218,23 @@ trace1 = go.Bar(
     x = (temp_y1 / pd.Series(count_occ)) * 100,
     y = temp.index,
     orientation='h',
-    name='NO'
+    name='NON'
 )
 trace2 = go.Bar(
     x = (temp_y0 /  pd.Series(count_occ)) * 100,
     y = temp.index,
     orientation='h',
-    name='YES'
+    name='OUI'
 )
 
 data = [trace1, trace2]
 layout_occupation = go.Layout(
-    title = "Occupation of Applicant's in terms of loan is repayed or not in %",
+    title = "Emploi des demandeurs selon le risque de défaut",
     #Barmode=stack permet d'avoir des graphiques empilés
     barmode='stack',
     width = 1000,
     xaxis=dict(
-        title='Pourcentage',
+        title='Fréquence (%)',
         tickfont=dict(
             size=14,
             color='rgb(107, 107, 107)'
@@ -423,20 +255,12 @@ layout_occupation = go.Layout(
 
 fig_occupation_type_target = go.Figure(data=data, layout=layout_occupation)
 
-
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
 dash.register_page(__name__, path="/apps/global")
 ## Layout de la page globale
 layout = html.Div([
 
     #####################
-    #Row 1 : Header
-    get_header(),
-
     #####################
-    #Row 2 : Nav bar
-    get_navbar('Client'),
     #####################
     #Row 3 : Filters
     html.Div([  # External row
@@ -537,16 +361,7 @@ layout = html.Div([
         style=externalgraph_rowstyling
     ),  # External row
 ])
-#@app.callback(
-    #Output("output", "children"),
-    #Input("row_client", "value"),
-#)
 
-
-#@app.callback(
-    #Output("table-container", "data"),
-    #Input("filter_dropdown", "value")
-#)
 
 if __name__ == "__main__":
     app.run_server(debug=True, use_reloader=False)
