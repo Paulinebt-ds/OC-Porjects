@@ -28,9 +28,9 @@ import numpy as np
 )
 def filter_id(caseval):
     if type(caseval) is int:
-        data = data_domain[data_domain["SK_ID_CURR"] == int(str(caseval))]
+        data = data_domain[data_domain["SK_ID_CURR"] == int(float(str(caseval)))]
     else:
-        data = data_domain
+        data = data_domain[data_domain["SK_ID_CURR"] == int(float(str(100002)))]
     return data.to_dict('records')
 
 
@@ -53,12 +53,12 @@ def update_input(submit_n_clicks, reset_n_clicks, case):
     return id_client
 
 @app.callback(
-    Output("update_score", "children"),
+    Output("memory-API", "data"),
     Input('submit-button', 'n_clicks'),
     Input('reset-button', 'n_clicks'),
-    Input("case-dropdown", "value"),
-)
-def update_score(submit_n_clicks, reset_n_clicks, case):
+    Input("case-dropdown", "value"))
+
+def data_from_API(submit_n_clicks, reset_n_clicks, case):
     ctx = dash.callback_context
     if type(case) is int or "predict" in ctx.triggered[0]["prop_id"]:
         id_client = case
@@ -70,11 +70,33 @@ def update_score(submit_n_clicks, reset_n_clicks, case):
         # appel de l'API de prediction
         url = "http://127.0.0.1:5000/predict"
         r = requests.post(url, json=json_df)
-        print(r.text)
-        score = float(r.text)
+        r = r.json()
+        print(r)
+        data_row = pd.DataFrame.from_dict(r)
+        print(data_row)
+        print(data_row.shape)
+        data_row = data_row.to_dict('records')
+        print(type(data_row))
+        return data_row
 
+@app.callback(
+    Output("update_score", "children"),
+    Input('submit-button', 'n_clicks'),
+    Input('reset-button', 'n_clicks'),
+    Input("case-dropdown", "value"),
+    State('memory-API', "data")
+)
+def update_score(submit_n_clicks, reset_n_clicks, case, data):
+    ctx = dash.callback_context
+    if type(case) is int and type(data) is list or "predict" in ctx.triggered[0]["prop_id"]:
+        data_row = pd.DataFrame.from_dict(data)
+        print(data_row)
+        score = data_row["score_pred"].values
+        print(score)
+        score = score[0]
+        score = float(str(score))
+        print(score)
         return score
-
 
 @app.callback(
     Output("update_card", "children"),
@@ -83,7 +105,6 @@ def update_score(submit_n_clicks, reset_n_clicks, case):
     Input("update_score", "children"),
 )
 def update_card(submit_n_clicks, reset_n_clicks, score):
-    ctx = dash.callback_context
     print(type(score))
     if type(score) is float:
         if score <= 0.5:
@@ -96,7 +117,7 @@ def update_card(submit_n_clicks, reset_n_clicks, score):
 
 
 @app.callback(Output('case-dropdown', 'value'),
-              Input('reset-button', 'n_clicks'))
+           Input('reset-button', 'n_clicks'))
 def clear_form(n_clicks):
     """Empty input textarea"""
     return ""
@@ -181,8 +202,9 @@ def update_table(n_samples):
               Input('submit-button', 'n_clicks'),
               Input('reset-button', 'n_clicks'),
               State('case-dropdown', 'value'),
-              State('num-samples-input', 'value'))
-def generate_explainer_html(submit_n_clicks, reset_n_clicks, case, n_samples):
+              State('num-samples-input', 'value'),
+              State('memory-API', 'data'))
+def generate_explainer_html(submit_n_clicks, reset_n_clicks, case, n_samples, data):
     ctx = dash.callback_context  # Capture callback context to track button clicks
     empty_obj = html.Iframe(
         srcDoc='''<div>Enter input text to see LIME explanations.</div>''',
@@ -191,13 +213,19 @@ def generate_explainer_html(submit_n_clicks, reset_n_clicks, case, n_samples):
         style={'border': '2px #d3d3d3 solid'},
         hidden=True,
     )
-    if type(case) is list or not n_samples or "reset" in ctx.triggered[0]["prop_id"]:
+    if type(case) is list or type(n_samples) is not int or "reset" in ctx.triggered[0]["prop_id"]:
         # Return empty iFrame
         obj = empty_obj
     else:
-        index = data_domain[data_domain["SK_ID_CURR"] == int(str(case))].index
-        index = index[0]
-        exp = lime_explain(lime_explainer, scaled_test_data[index], predict_method, num_features=int(n_samples))
+        data = pd.DataFrame.from_dict(data)
+        data.drop(columns="score_pred", axis=1, inplace=True)
+        print(data)
+        data = np.array(data)
+        print(data)
+        print(data.shape)
+        print(data[0])
+        print(data[0].shape)
+        exp = lime_explain(lime_explainer, data[0], predict_method, num_features=int(n_samples))
 
         obj = html.Iframe(
             # Javascript is disabled from running in an IFrame for security reasons
