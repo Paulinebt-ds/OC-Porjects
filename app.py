@@ -65,9 +65,8 @@ def predict():
     ## Sous format HTML
     id_client = data_client.iloc[:, 0]
     return '''
-                      <h1>Ligne du client choisi: {}</h1>
                       <h1>ID du client : {}</h1>
-                      <h1>Prédiction du client : {}</h1>'''.format(2, id_client, pred)
+                      <h1>Prédiction du client : {}</h1>'''.format(id_client, pred)
 
 
 
