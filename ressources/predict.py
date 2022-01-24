@@ -64,16 +64,12 @@ def predict():
     return payload
     # Affichage du résultat
     ## Sous format json
-    req_data = {"ligne client": 2,
-                "id": data_client.iloc[0, 0],
+    req_data = {"id": data_client.iloc[0, 0],
                 "prediction": pred}
     print(payload)
     print('Nouvelle Prédiction : \n', req_data)
 
     #return pred_score
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
