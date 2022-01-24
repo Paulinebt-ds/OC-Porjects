@@ -50,20 +50,28 @@ def predict():
 
     # Réduction
     payload = scaler.transform(payload)
+    print(type(payload))
+    print(payload)
+    print(payload[0].shape)
 
     # Prédiction
     pred = LGBM_model.predict(payload)
     print(pred)
     pred_score = ''.join(str(e) for e in pred)
+    payload = pd.DataFrame(payload, columns=cols)
+    payload["score_pred"] = pred_score
+    payload = payload.to_json()
+    return payload
     # Affichage du résultat
     ## Sous format json
     req_data = {"ligne client": 2,
                 "id": data_client.iloc[0, 0],
                 "prediction": pred}
-
+    print(payload)
     print('Nouvelle Prédiction : \n', req_data)
 
-    return pred_score
+    #return pred_score
+
 
 
 
