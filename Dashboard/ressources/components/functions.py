@@ -10,6 +10,7 @@ import seaborn as sns
 import pickle
 import lime
 import time
+import plotly.express as px
 from sklearn.pipeline import make_pipeline
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -34,9 +35,54 @@ def get_lime_explainer(data, X):
                                       )
   return lime_explainer
 
+
+def create_time_series(dff, col, y_col, color, title):
+    fig = px.histogram(dff, x=col, y=y_col, color=color, title=title)
+
+    fig.update_xaxes(showgrid=False)
+
+    return fig
+
+def create_moy_hist(id_client, col_to_plot, dff, data):
+    if type(id_client) is not int:
+        moy_regle = np.mean(dff[dff["TARGET"]==0][col_to_plot])
+        moy_defaut = np.mean(dff[dff["TARGET"]==1][col_to_plot])
+        moy_globale = np.mean(dff[col_to_plot])
+        d = {'groupe': ["globale", "en règle", "défaut"], 'moyenne': [moy_globale, moy_regle, moy_defaut]}
+        dff = pd.DataFrame(data=d)
+        title = 'Moyenne par groupe de la variable %s'%(col_to_plot)
+        col = "groupe"
+        y_col = "moyenne"
+        color = "groupe"
+        fig = create_time_series(dff, col, y_col, color, title)
+        return fig
+
+    else:
+        print(id_client)
+        print(type(id_client))
+        data_client = pd.DataFrame.from_dict(data)
+        print(data_client)
+        data = data_client[col_to_plot]
+        print(data)
+        data = data.values
+        print(data)
+        data = data[0]
+        print(data)
+        moy_regle = np.mean(dff[dff["TARGET"]==0][col_to_plot])
+        moy_defaut = np.mean(dff[dff["TARGET"]==1][col_to_plot])
+        moy_globale = np.mean(dff[col_to_plot])
+        d = {'groupe': ["globale", "en règle", "défaut", "client"], 'moyenne': [moy_globale, moy_regle, moy_defaut, data]}
+        dff = pd.DataFrame(data=d)
+        title = 'Moyenne par groupe de la variable %s'%(col_to_plot)
+        col = "groupe"
+        y_col = "moyenne"
+        color = "groupe"
+        fig = create_time_series(dff, col, y_col, color, title)
+        return fig
+
 def lime_explain(explainer, data, predict_method, num_features):
-  explanation = explainer.explain_instance(data, predict_method, num_features=num_features, num_samples=100)
-  return explanation
+    explanation = explainer.explain_instance(data, predict_method, num_features=num_features, num_samples=100)
+    return explanation
 
 
 corporate_colors = {
