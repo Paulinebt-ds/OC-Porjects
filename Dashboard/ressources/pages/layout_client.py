@@ -1,5 +1,6 @@
 # Importation des packages
 import dill
+import plotly
 from flask import Flask, request
 from flask_caching import Cache
 import dash
@@ -11,7 +12,6 @@ from dash.dependencies import Input, Output, State
 from dash import callback
 from dash import dash_table
 from io import BytesIO
-
 from plotly.graph_objs import Figure
 
 import dash_alternative_viz as dav
@@ -29,6 +29,8 @@ import time
 from joblib import dump, load
 
 # Import des fonctions de preprocess
+from plotly.offline import iplot
+
 from ressources.components.preprocess import *
 from ressources.components.functions import *
 # from components.functions import *
@@ -309,6 +311,21 @@ layout = html.Div([
                 ],
                     className='col-6'),
                 html.Div([
+                    dcc.Graph(id="credit-term-figure")],
+                    className='col-6'),
+                html.Div([
+                    dcc.Graph(id="days-birth-figure")],
+                    className='col-6'),
+                html.Div([
+                    dcc.Graph(id="amt-annuity-figure")],
+                    className='col-6'),
+                html.Div([
+                    dcc.Graph(id="id-publish-figure")],
+                    className='col-6'),
+                html.Div([
+                    dcc.Graph(id="employed-percent-figure")],
+                    className='col-6'),
+                html.Div([
                     dash_table.DataTable(
                     id='table-desc',
                     columns=[{"name": i, "id": i} for i in desc_col.columns],
@@ -326,11 +343,10 @@ layout = html.Div([
                     style_table={'height': '400px', 'overflowY': 'auto'},
                     sort_action='native'
                     )]),
-                html.Br(),
-                dcc.Loading(
-                    id='explainer-obj',
-                    type="default"
-                ),
+                html.Div([dav.Svg(
+                    id='explainer-obj'
+                )],
+                 className='col-6'),
             ],
                 className='row'),  # Internal row
         ],
@@ -384,7 +400,7 @@ def update_input(submit_n_clicks, reset_n_clicks, case):
     Input('reset-button', 'n_clicks'),
     Input("case-dropdown", "value"))
 
-def data_from_API(submit_n_clicks, reset_n_clicks, case):
+def data_from_api(submit_n_clicks, reset_n_clicks, case):
     ctx = dash.callback_context
     if type(case) is int or "predict" in ctx.triggered[0]["prop_id"]:
         id_client = case
@@ -509,6 +525,58 @@ def seaborn_fig(n_samples):
         obj = b_io.getvalue().decode("utf-8")
         return obj
 
+
+@callback(
+    dash.dependencies.Output("credit-term-figure", "figure"),
+    [dash.dependencies.Input("case-dropdown", "value"),
+     dash.dependencies.State('memory-output', "data")])
+def update_credit_term(id_client, data):
+    col_to_plot = "CREDIT_TERM"
+    dff = data_domain
+    fig = create_moy_hist(id_client, col_to_plot, dff, data)
+    return go.Figure(fig)
+
+
+@callback(
+    dash.dependencies.Output("days-birth-figure", "figure"),
+    [dash.dependencies.Input("case-dropdown", "value"),
+     dash.dependencies.State('memory-output', "data")])
+def update_days_birth(id_client, data):
+    col_to_plot = "DAYS_BIRTH"
+    dff = data_domain
+    fig = create_moy_hist(id_client, col_to_plot, dff, data)
+    return go.Figure(fig)
+
+@callback(
+    dash.dependencies.Output("amt-annuity-figure", "figure"),
+    [dash.dependencies.Input("case-dropdown", "value"),
+     dash.dependencies.State('memory-output', "data")])
+def update_amt_annuity(id_client, data):
+    col_to_plot = "AMT_ANNUITY"
+    dff = data_domain
+    fig = create_moy_hist(id_client, col_to_plot, dff, data)
+    return go.Figure(fig)
+
+@callback(
+    dash.dependencies.Output("id-publish-figure", "figure"),
+    [dash.dependencies.Input("case-dropdown", "value"),
+     dash.dependencies.State('memory-output', "data")])
+def update_id_publish(id_client, data):
+    col_to_plot = "DAYS_ID_PUBLISH"
+    dff = data_domain
+    fig = create_moy_hist(id_client, col_to_plot, dff, data)
+    return go.Figure(fig)
+
+@callback(
+    dash.dependencies.Output("employed-percent-figure", "figure"),
+    [dash.dependencies.Input("case-dropdown", "value"),
+     dash.dependencies.State('memory-output', "data")])
+def update_employed_percent(id_client, data):
+    col_to_plot = "DAYS_EMPLOYED_PERCENT"
+    dff = data_domain
+    fig = create_moy_hist(id_client, col_to_plot, dff, data)
+    return go.Figure(fig)
+
 @callback(Output("table-desc", "data"),
               [Input('num-samples-input', 'value')])
 def update_table(n_samples):
@@ -524,45 +592,42 @@ def update_table(n_samples):
 
     return filtered_df.to_dict('records')
 
-@callback(Output('explainer-obj', 'children'),
+
+@callback(Output('explainer-obj', 'contents'),
               Input('submit-button', 'n_clicks'),
               Input('reset-button', 'n_clicks'),
               State('case-dropdown', 'value'),
               State('num-samples-input', 'value'),
               State('memory-API', 'data'))
 def generate_explainer_html(submit_n_clicks, reset_n_clicks, case, n_samples, data):
-    ctx = dash.callback_context  # Capture callback context to track button clicks
-    empty_obj = html.Iframe(
-        srcDoc='''<div>Enter input text to see LIME explanations.</div>''',
-        width='100%',
-        height='100px',
-        style={'border': '2px #d3d3d3 solid'},
-        hidden=True,
-    )
-    if type(case) is list or type(n_samples) is not int or "reset" in ctx.triggered[0]["prop_id"]:
-        # Return empty iFrame
-        obj = empty_obj
-    else:
-        data = pd.DataFrame.from_dict(data)
-        data.drop(columns="score_pred", axis=1, inplace=True)
-        print(data)
-        data = np.array(data)
-        print(data)
-        print(data.shape)
-        print(data[0])
-        print(data[0].shape)
-        exp = lime_explain(lime_explainer, data[0], predict_method, num_features=int(n_samples))
+    if type(n_samples) is int:
+        data_row = pd.DataFrame.from_dict(data)
+        data_row = data_row.loc[0, :]
+        json_df = data_row.to_json()
+        exp = requests.post('http://127.0.0.1:5000/lime', json=json_df)
+        print(exp)
+        print(type(exp))
+        exp = exp.json()
+        print(exp)
+        print(exp.items())
+        print(list(exp.items()))
+        exp = list(exp.items())
+        fig = plt.figure(figsize=(12,6))
+        vals = [x[1] for x in exp]
+        names = [x[0] for x in exp]
+        vals.reverse()
+        names.reverse()
+        colors = ['green' if x > 0 else 'red' for x in vals]
+        pos = np.arange(len(exp)) + .5
+        plt.barh(pos, vals, align='center', color=colors)
+        plt.yticks(pos, names, fontsize=8)
+        title = 'Local explanation for class 1'
+        plt.title(title)
+        b_io = BytesIO()
+        fig.savefig(b_io, format="svg")
+        obj = b_io.getvalue().decode("utf-8")
 
-        obj = html.Iframe(
-            # Javascript is disabled from running in an IFrame for security reasons
-            # Static HTML only!!!
-            srcDoc=exp.as_html(),
-            width='100%',
-            height='800px',
-            style={'border': '2px #d3d3d3 solid',
-                   'backgroundColor': 'white'}
-        )
-    return obj
+        return obj
 
 
 if __name__ == "__main__":
