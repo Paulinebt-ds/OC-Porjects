@@ -5,12 +5,15 @@ import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.impute import SimpleImputer
-
+from ressources.components.functions import lime_explain
+from ressources.pages.layout_client import lime_explainer, predict_method
 import lightgbm as lgb
+import lime
+from lime.lime_tabular import LimeTabularExplainer
 from joblib import load
 import pickle
 import numpy as np
-
+import requests
 app = Flask(__name__)
 
 @app.route('/predict', methods = ['POST'])
@@ -65,12 +68,46 @@ def predict():
     return payload
     # Affichage du résultat
     ## Sous format json
-    req_data = {"id": data_client.iloc[0, 0],
+    req_data = {"ligne client": 2,
+                "id": data_client.iloc[0, 0],
                 "prediction": pred}
     print(payload)
     print('Nouvelle Prédiction : \n', req_data)
 
+@app.route('/lime', methods=['POST'])
+def lime_test():
+    print(request)
+    row = request.get_json()
+    print("Réponse de l'API de prédiction: ", row)
+    row = json.loads(row)
+    print(row)
+    print(type(row))
+    row = {k: [v] for k, v in row.items()}
+    print(row)
+    data = pd.DataFrame.from_dict(row)
+    data.drop(columns="score_pred", axis=1, inplace=True)
+    print("Data pour lime_explainer :",data)
+    data = np.array(data)
+    print(data)
+    print(data.shape)
+    print(data[0])
+    print(data[0].shape)
+    n_samples = 2
+    exp = lime_explain(lime_explainer, data[0], predict_method, n_samples)
+    print("Type de l'explain_instance : ",type(exp))
+    exp_list = exp.as_list()
+    print(type(exp_list))
+    print("Explain_instance sous forme de liste :", exp_list)
+    exp_json = json.dumps(dict(exp_list))
+
+    return exp_json
+
+
+
     #return pred_score
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
